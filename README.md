@@ -9,9 +9,10 @@ Naglowek wiadomosci (do autoryzacji itp) do dodania pozniej, najpierw nalwazniej
 * connected
 * reconnect
 * move $x $y
-* attack $gracz
 * ability $umiejetnosc $cel
 
 ### Od serwera do klienta
 * $gracz attack $cel
 * $gracz move $x $y
+* id $uuid
+* player $id $postac
