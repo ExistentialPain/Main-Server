@@ -4,7 +4,8 @@ Napisany w Javie, oparty na TCP.
 
 
 ## Wiadomości
-Naglowek wiadomosci (do autoryzacji itp) do dodania pozniej, najpierw nalwazniejsze zeby dzialalo
+Naglowek wiadomosci (do autoryzacji itp) do dodania pozniej, najpierw nalwazniejsze zeby dzialalo  
+Wiadomosci terminowane sa przez znak nowej linii (\n)
 ### Od klienta do serwera
 * connected
 * reconnect
