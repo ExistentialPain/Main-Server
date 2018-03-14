@@ -19,6 +19,7 @@ public class User implements Disposable, Closeable {
     public User(String id, String token) {
         this.id = id;
         this.token = token;
+        this.eHandler = eventHandler;
     }
 
     public void pushNotification(Notification n) {
@@ -31,12 +32,17 @@ public class User implements Disposable, Closeable {
         }
     }
 
+    public void bindEventSocket(Socket socket, Handler<EventMessage> handler) throws IOException {
+        this.eHandler = handler;
+        bindEventSocket(socket);
+    }
+
     public void bindEventSocket(Socket socket) throws IOException {
         this.socket = socket;
         this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         this.out = new PrintWriter(socket.getOutputStream());
         new Thread(() -> {
-            while (this.socket != null && !this.socket.isClosed() && this.socket.isConnected()) {
+            while (isConnected()) {
                 try {
                     EventMessage message = EventMessage.get(this.socket.getInputStream());
                     if (!equals(new User(message.getEventHeaders().get("author"), message.getEventHeaders().get("token")))) {
@@ -46,7 +52,7 @@ public class User implements Disposable, Closeable {
                         sendMessage(m);
                         return;
                     }
-                    eventHandler.handle(message);
+                    eHandler.handle(message);
                 } catch (IOException e) {
                     this.socket = null;
                     this.out = null;
@@ -153,9 +159,22 @@ public class User implements Disposable, Closeable {
         }
     }
 
+    public boolean isConnected() {
+        return socket != null && !socket.isClosed() && socket.isConnected();
+    }
+
+    public void disconnect() {
+        try {
+            close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private String id, token;
     private Socket socket;
     private BufferedReader in;
     private PrintWriter out;
+    private Handler<EventMessage> eHandler = null;
     private static Handler<EventMessage> eventHandler;
 }

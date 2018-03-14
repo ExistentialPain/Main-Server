@@ -13,6 +13,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -24,15 +26,43 @@ public class Main {
         return db;
     }
 
+    public static File jarDir() {
+        try {
+            return new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath()).getParentFile();
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     private static Database db;
-    private static final String dbLogin = "root";
-    private static final String dbPassword = "bardzotajnehaslo";
-    private static final String dbName = "SCIGame";
+    private static String dbLogin = "root";
+    private static String dbPassword = "";
+    private static String dbName = "SCIGame";
     public static final Dispenser<User> users = new Dispenser<>();
 
-    public static void main(String[] args) throws IOException, SQLException {
-        db = new MySQL("jdbc:mysql://localhost", dbLogin, dbPassword, dbName);
-        User.setEventHandler(EventSocketHandler.getInstance());
+    public static void main(String[] args) throws IOException {
+        File jarDir = jarDir();
+        if (jarDir != null) {
+            try {
+                System.out.println("jarDir isnt null...");
+                Properties props = new Properties();
+                props.load(new FileInputStream(Paths.get(jarDir.getAbsolutePath(), "props.conf").toFile()));
+                dbLogin = props.getProperty("login", "root");
+                dbPassword = props.getProperty("password", "");
+                dbName = props.getProperty("database", "SCIGame");
+            } catch (Exception e) {
+                System.out.println("Error reading config file...");
+            }
+        }
+
+        try {
+            db = new MySQL("jdbc:mysql://localhost", dbLogin, dbPassword, dbName);
+            User.setEventHandler(EventSocketHandler.getInstance());
+        } catch (SQLException e) {
+            System.out.println("Error establishing connection with database, terminating...");
+            System.exit(-1);
+        }
 
         EventServer eventServer = new EventServer(EVENT_PORT);
         eventServer.start();
