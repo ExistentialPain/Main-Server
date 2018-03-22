@@ -165,7 +165,7 @@ public class Main {
             return response;
         });
 
-        server.registerMethodHandler("/logout", HttpMethod.GET, request -> {
+        server.registerMethodHandler("/logout", HttpMethod.POST, request -> {
             HttpResponse response = new HttpResponse();
             User user = users.get(request.getHeaders().get("Author"));
             if (user.equals(new User(request.getHeaders().get("Author"), request.getHeaders().get("Token")))) {

@@ -51,9 +51,9 @@ public class EventSocketHandler implements Handler<EventMessage> {
                     User leaver = Main.users.get(item.getEventHeaders().get("author"));
                     Lobby lobby = Lobby.search(values[1]);
                     if (lobby.disconnect(leaver)) {
-                        EventMessage message = new EventMessage();
+                        /*EventMessage message = new EventMessage();
                         message.write("succ leave-lobby");
-                        leaver.sendMessage(message);
+                        leaver.sendMessage(message);*/
                     } else {
                         EventMessage message = new EventMessage();
                         message.write("err leave-lobby unknown");

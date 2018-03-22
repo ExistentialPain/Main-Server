@@ -97,6 +97,14 @@ public class User implements Disposable, Closeable {
         return Objects.equals(id, other.id) && Objects.equals(token, other.token);
     }
 
+    public void setUserData(Object data) {
+        uData = data;
+    }
+
+    public Object getUserData() {
+        return uData;
+    }
+
     public static void setEventHandler(Handler<EventMessage> handler) {
         eventHandler = handler;
     }
@@ -171,6 +179,7 @@ public class User implements Disposable, Closeable {
         }
     }
 
+    private Object uData;
     private String id, token;
     private Socket socket;
     private BufferedReader in;
