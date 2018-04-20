@@ -13,6 +13,8 @@ public class EventMessage {
         DataInputStream inpt = new DataInputStream(rawMessage);
         int size = inpt.readInt();
         int hSize = inpt.readInt();
+        System.out.println("Size: " + size);
+        System.out.println("hSize: " + hSize);
         byte[] headers = new byte[hSize];
         byte[] msg = new byte[size - hSize];
         inpt.readFully(headers);
@@ -23,6 +25,7 @@ public class EventMessage {
         while ((header = br.readLine()) != null) {
             String[] hArr = header.split(":", 2);
             message.eventHeaders.addHeader(hArr[0], (hArr[1].equals("") ? null : hArr[1]));
+            System.out.println(hArr[0]);
         }
         return message;
     }

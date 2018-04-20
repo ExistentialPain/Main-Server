@@ -64,7 +64,7 @@ public class EventSocketHandler implements Handler<EventMessage> {
 
                 case "create-lobby": {
                     User creator = Main.users.get(item.getEventHeaders().get("author"));
-                    Lobby lobby = Lobby.create(creator, 10, 6, 4);
+                    Lobby lobby = Lobby.create(creator, 10, new int[] {6, 4});
                     if (lobby == null) {
                         EventMessage message = new EventMessage();
                         message.write("err create-lobby");

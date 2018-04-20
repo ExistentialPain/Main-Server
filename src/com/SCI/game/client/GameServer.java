@@ -1,8 +1,10 @@
 package com.SCI.game.client;
 
 import com.SCI.game.*;
+import com.SCI.game.launcher.Lobby;
 import com.SCI.net.EventMessage;
 import com.SCI.net.User;
+import com.SCI.util.Disposable;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -13,11 +15,19 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.UUID;
 
-public class GameServer implements Runnable {
-    public GameServer(LinkedList<User> players, int allyTeamSize, ServerSocket socket) {
+public class GameServer implements Runnable, Disposable {
+    public GameServer(LinkedList<LobbyUser> players, ServerSocket socket) {
+        this.disposable = false;
         this.socket = socket;
         Collections.shuffle(players);
-        allies = new HashMap<>();
+
+        this.players = new HashMap<>();
+        while (!players.isEmpty()) {
+            LobbyUser user = players.removeFirst();
+            this.players.put(user.getUser().getId(), user);
+        }
+
+        /*allies = new HashMap<>();
         for (int i = 0; i < allyTeamSize; ++i) {
             User player = players.removeFirst();
             allies.put(player.getId(), player);
@@ -27,32 +37,26 @@ public class GameServer implements Runnable {
         for (int i = 0; i < size; ++i) {
             User player = players.removeFirst();
             enemies.put(player.getId(), player);
-        }
+        }*/
         try {
             HashMap<UUID, Player> hPlayers = new HashMap<>();
-            for (User user : allies.values()) {
-                Player p = new Player(PlayerClass.ARCHER);
-                UUID id = UUID.randomUUID();
+            for (LobbyUser user : this.players.values()) {
+                Player p = new Player(user.getPlayerClass(), user.getTeam());
+                UUID id = p.getId();
                 hPlayers.put(id, p);
-                user.setUserData(id);
+                user.getUser().setUserData(id);
             }
 
-            for (User user : enemies.values()) {
-                Player p = new Player(PlayerClass.ARCHER);
-                UUID id = UUID.randomUUID();
+            /*for (User user : enemies.values()) {
+                Player p = new Player(PlayerClass.ARCHER, 2);
+                UUID id = p.getId();
                 hPlayers.put(id, p);
                 user.setUserData(id);
-            }
+            }*/
 
             env = new GameEnvironment(hPlayers);
-            handlerClass.getConstructor(GameEnvironment.class).newInstance(env);
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
-        } catch (NoSuchMethodException e) {
+            handler = handlerClass.getConstructor(GameEnvironment.class).newInstance(env);
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             e.printStackTrace();
         }
     }
@@ -77,58 +81,69 @@ public class GameServer implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            for (User user : allies.values()) {
-                user.disconnect();
+            for (LobbyUser user : players.values()) {
+                user.getUser().disconnect();
             }
-
-            for (User user : enemies.values()) {
-                user.disconnect();
-            }
+            disposable = true;
         }
     }
 
+    @Override
+    public boolean isDisposable() {
+        return disposable;
+    }
+
     private synchronized void accept() {
+        Socket sock = null;
         try {
-            Socket sock = socket.accept();
+            sock = socket.accept();
             EventMessage message = EventMessage.get(sock.getInputStream());
             String author = message.getEventHeaders().get("author");
             String token = message.getEventHeaders().get("token");
             User tmp = new User(author, token);
             tmp.bindEventSocket(sock, item -> {});
-            User attempted;
-            attempted = allies.get(author);
-            if (attempted == null) {
-                attempted = enemies.get(author);
-            }
+            LobbyUser attempted;
+            attempted = players.get(author);
             if (attempted == null) {
                 EventMessage tmpMessage = new EventMessage();
                 tmpMessage.write("xvrrqsZxcsAA");
                 tmp.sendMessage(tmpMessage);
+                tmp.close();
                 return;
             }
 
-            if (!attempted.equals(tmp)) {
+            if (!attempted.getUser().equals(tmp)) {
                 EventMessage tmpMessage = new EventMessage();
                 tmpMessage.write("cQsaVrt21b3n1s");
                 tmp.sendMessage(tmpMessage);
+                tmp.close();
                 return;
             }
-            if (attempted.isConnected()) {
-                attempted.disconnect();
+            tmp.close();
+            if (attempted.getUser().isConnected()) {
+                attempted.getUser().disconnect();
             }
-            User finalAttempted = attempted;
-            attempted.bindEventSocket(sock, rMessage -> {
-                UUID id = (UUID) finalAttempted.getUserData();
+            LobbyUser finalAttempted = attempted;
+            attempted.getUser().bindEventSocket(sock, rMessage -> {
+                UUID id = (UUID) finalAttempted.getUser().getUserData();
                 GameArgs args = new GameArgs(env.getPlayer(id));
                 handler.handle(rMessage.getBody(), args);
                 //TODO: implement the callback method for parsing message
             });
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
+            if (sock != null) {
+                try {
+                    sock.close();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+            }
         }
     }
 
-    private HashMap<String, User> allies, enemies;
+    private boolean disposable;
+    private HashMap<String, LobbyUser> players;
     private GameEnvironment env;
     private ServerSocket socket;
     private static Class<? extends GameMessageHandler> handlerClass;

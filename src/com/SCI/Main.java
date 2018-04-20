@@ -45,7 +45,6 @@ public class Main {
         File jarDir = jarDir();
         if (jarDir != null) {
             try {
-                System.out.println("jarDir isnt null...");
                 Properties props = new Properties();
                 props.load(new FileInputStream(Paths.get(jarDir.getAbsolutePath(), "props.conf").toFile()));
                 dbLogin = props.getProperty("login", "root");
@@ -64,11 +63,15 @@ public class Main {
             System.exit(-1);
         }
 
+        System.out.println("Starting event server...");
         EventServer eventServer = new EventServer(EVENT_PORT);
         eventServer.start();
+        System.out.println("Event server started...");
 
+        System.out.println("Starting http server...");
         RestServer server = new RestServer(SERVER_PORT);
 
+        System.out.println("Registering http callbacks...");
         server.registerMethodHandler("/register", HttpMethod.POST, request -> {
             HttpResponse response = new HttpResponse();
             HashMap<String, String> queries;
@@ -304,8 +307,10 @@ public class Main {
             return response;
         });
 
+        System.out.println("Creating http server socket...");
         server.start();
-
+        System.out.println("Http server started...");
+        System.out.println("Everything is ready!");
 
 
         Scanner in = new Scanner(System.in);
@@ -313,6 +318,14 @@ public class Main {
         while (true) {
             command = in.next();
             switch (command.toLowerCase()) {
+                case "peng":
+                    Main.users.forEach(user -> {
+                        EventMessage msg = new EventMessage();
+                        msg.write("you have been PENGU TEH PENGU OWO");
+                        user.sendMessage(msg);
+                        return null;
+                    });
+                    break;
                 case "stop":
                     users.kill();
                     server.stop(1);

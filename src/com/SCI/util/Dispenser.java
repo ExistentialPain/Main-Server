@@ -1,5 +1,7 @@
 package com.SCI.util;
 
+import javafx.util.Callback;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
@@ -42,6 +44,12 @@ public class Dispenser <T extends Disposable & Closeable> {
 
     public synchronized void put(String key, T object) {
         managedObjects.put(key, object);
+    }
+
+    public synchronized void forEach(Callback<T, Void> func) {
+        for (T object : managedObjects.values()) {
+            func.call(object);
+        }
     }
 
     public boolean has(String key) {

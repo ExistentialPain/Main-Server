@@ -19,6 +19,9 @@ public class EventServer implements Closeable {
                     EventMessage message = EventMessage.get(socket.getInputStream());
                     System.out.println("Message gotted");
                     User user = Main.users.get(message.getEventHeaders().get("author"));
+                    if (user == null) {
+                        System.out.println("wtf???");
+                    }
                     System.out.println("The author is: " + message.getEventHeaders().get("author"));
                     if (!user.equals(new User(message.getEventHeaders().get("author"),
                             message.getEventHeaders().get("token")))) {
@@ -32,7 +35,7 @@ public class EventServer implements Closeable {
                         Main.users.get(message.getEventHeaders().get("author")).bindEventSocket(socket);
                         //EventSocket.create(socket, AuthToken.get(message.getEventHeaders().get("token")));
                     }
-                } catch (IOException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
